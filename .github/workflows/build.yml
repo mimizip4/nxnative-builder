@@ -1,0 +1,33 @@
+name: Build nxnative IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 👇 바로 이 부분입니다!
+      - name: Download ROM and Keys from Google Drive
+        run: |
+          echo "Downloading files from Google Drive..."
+          pip install gdown
+          
+          # 여기에 본인의 드라이브 파일 ID를 넣으세요
+          gdown --id "여기에_키파일ID_입력" -O prod.keys
+          gdown --id "여기에_롬파일ID_입력" -O game.nsp
+          
+          ls -la
+
+      - name: Clone and Setup nxnative
+        run: |
+          git clone https://github.com/nxnative/nxnative.git
+
+      - name: Build IPA with nxnative
+        run: |
+          cd nxnative
+          # (nxnative 빌드 명령어 실행)
