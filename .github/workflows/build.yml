@@ -1,57 +1,59 @@
 name: Build nxnative IPA
 
 on:
-  workflow_dispatch: # 수동으로 워크플로우를 실행하도록 설정
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
-      # 1. 저장소 체크아웃
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. 구글 드라이브에서 롬 파일(ZIP) 다운로드
-      # 주의: 이 부분은 이전에 에러를 해결하셨던 본인의 실제 다운로드 명령어로 수정하셔야 합니다.
-      - name: Download ROM Zip from Google Drive
+      - name: Download ROM and Keys from Google Drive
         run: |
-          # 예시: gdown 등을 이용해 파일을 다운로드 (본인의 코드로 덮어씌우세요)
-          # gdown "https://drive.google.com/uc?id=본인의_구글드라이브_파일ID" -O rom_download.zip
+          echo "Installing the latest gdown from GitHub to bypass Google Drive blocks..."
+          pip install git+https://github.com/wkentaro/gdown.git
           
-          # 파일 이름을 통일하기 위해 임시로 rom_download.zip으로 이름을 바꿉니다.
-          mv 원래다운받은파일이름.zip rom_download.zip
-
-      # 3. 다운로드한 롬 파일 압축 해제
-      - name: Unzip ROM Files
-        run: |
-          # 압축을 풀어 rom_files 폴더에 nsp와 keys 파일을 모아둡니다.
-          unzip -q rom_download.zip -d rom_files/
-
-      # 4. nxnative 베이스 IPA (껍데기) 다운로드
-      - name: Download nxnative Base IPA
-        run: |
-          wget -O base.ipa "https://github.com/nxnative/nxnative/releases/latest/download/nxnative.ipa"
-
-      # 5. 롬/키 파일 삽입 및 IPA 재패키징
-      - name: Inject ROM and Repackage IPA
-        run: |
-          # 베이스 IPA 압축 해제 (Payload 폴더가 생성됨)
-          unzip -q base.ipa -d ipa_workspace
+          echo "Downloading prod.keys..."
+          gdown "https://drive.google.com/uc?id=1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -O prod.keys
           
-          # rom_files 폴더 안의 nsp 게임 파일과 keys 파일을 nxnative 앱 내부로 복사
-          cp rom_files/*.nsp ipa_workspace/Payload/nxnative.app/
-          cp rom_files/*.keys ipa_workspace/Payload/nxnative.app/
-          
-          # 완성된 Payload 폴더를 다시 .ipa 형식으로 묶기
-          cd ipa_workspace
-          zip -qr9 ../Absolum-Final.ipa Payload/
+          echo "Downloading game.nsp (Absolum)..."
+          gdown "https://drive.google.com/uc?id=1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -O game.nsp
 
-      # 6. 최종 완성된 단일 IPA 파일을 Artifact로 업로드
+          # 다운로드된 파일의 실제 용량 확인
+          ls -lh prod.keys game.nsp
+
+      - name: Clone and Setup nxnative
+        run: |
+          git clone https://github.com/nxnative/nxnative.git
+
+      - name: Build nxnative App
+        run: |
+          cd nxnative
+          # Mac 환경에서 Xcode를 사용하여 nxnative 앱 껍데기 컴파일
+          xcodebuild -project nxnative.xcodeproj -scheme nxnative -configuration Release -arch arm64 CONFIGURATION_BUILD_DIR=../build
+
+      - name: Inject ROM and Package IPA
+        run: |
+          # IPA 패키징의 필수 규격인 Payload 폴더 생성
+          mkdir -p Payload
+          
+          # 방금 빌드된 앱 껍데기를 Payload 폴더로 이동
+          cp -r build/nxnative.app Payload/
+          
+          # 다운로드한 게임 롬과 키 파일을 앱 껍데기 내부로 밀어넣기
+          cp game.nsp Payload/nxnative.app/Absolum.nsp
+          cp prod.keys Payload/nxnative.app/
+          
+          # 롬이 포함된 최종 Payload 폴더를 .ipa 파일로 압축
+          zip -qr9 Absolum-Final.ipa Payload/
+
       - name: Upload Complete IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Absolum-IPA
           path: Absolum-Final.ipa
-          # 1.8GB 대용량의 이중 압축 방지를 위해 압축률을 0으로 설정합니다.
+          # 1.8GB 용량의 이중 압축(zip 안의 zip) 방지를 위해 압축률 0 설정
           compression-level: 0
