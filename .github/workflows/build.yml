@@ -14,16 +14,15 @@ jobs:
       - name: Download ROM and Keys from Google Drive
         run: |
           echo "Installing the latest gdown from GitHub to bypass Google Drive blocks..."
-          # PyPI 정식 버전 대신 최신 패치가 적용된 마스터 브랜치를 강제 설치합니다.
           pip install git+https://github.com/wkentaro/gdown.git
           
           echo "Downloading prod.keys..."
-          gdown --id "1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -O prod.keys
+          gdown "https://drive.google.com/uc?id=1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -O prod.keys
           
           echo "Downloading game.nsp (Absolum)..."
-          gdown --id "1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -O game.nsp
+          gdown "https://drive.google.com/uc?id=1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -O game.nsp
 
-          # 다운로드된 파일의 실제 용량 확인 (정상이라면 수 GB로 표시됩니다)
+          # 다운로드된 파일의 실제 용량 확인
           ls -lh prod.keys game.nsp
 
       - name: Clone and Setup nxnative
@@ -33,7 +32,6 @@ jobs:
       - name: Build IPA with nxnative
         run: |
           mkdir -p nxnative/output
-          # 다운로드 받은 롬 파일과 키를 아티팩트 결과물 폴더로 옮깁니다.
           mv game.nsp nxnative/output/Absolum.nsp
           mv prod.keys nxnative/output/prod.keys
 
