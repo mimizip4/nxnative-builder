@@ -14,13 +14,16 @@ jobs:
       - name: Download ROM and Keys from Google Drive
         run: |
           echo "Downloading files from Google Drive..."
-          pip install gdown
           
-          # prod.keys 다운로드
-          gdown --fuzzy --id "1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -O prod.keys
+          # prod.keys 직접 다운로드
+          curl -sc /tmp/cookie "https://drive.google.com/uc?export=download&id=1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" > /tmp/confirm.html
+          CODE="$(awk '/_="/{print $2}' /tmp/confirm.html | tr -d '\"' || true)"
+          curl -Lb /tmp/cookie "https://drive.google.com/uc?export=download&confirm=${CODE}&id=1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -o prod.keys
           
-          # Absolum ROM (.nsp) 다운로드
-          gdown --fuzzy --id "1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -O game.nsp
+          # game.nsp 직접 다운로드
+          curl -sc /tmp/cookie "https://drive.google.com/uc?export=download&id=1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" > /tmp/confirm.html
+          CODE="$(awk '/_="/{print $2}' /tmp/confirm.html | tr -d '\"' || true)"
+          curl -Lb /tmp/cookie "https://drive.google.com/uc?export=download&confirm=${CODE}&id=1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -o game.nsp
 
           ls -la
 
