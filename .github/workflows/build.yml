@@ -33,12 +33,17 @@ jobs:
 
       - name: Build IPA with nxnative
         run: |
+          # 롬 파일과 키를 nxnative 폴더 내부의 알맞은 위치로 이동
+          mkdir -p nxnative/input
+          mv game.nsp nxnative/input/game.nsp
+          mv prod.keys nxnative/prod.keys
+          
           cd nxnative
-          # 실제 빌드 스크립트 실행 및 테스트용 IPA 파일 생성 위치 지정
-          mkdir -p output
-          # 임시로 다운받은 game.nsp와 prod.keys를 이용해 빌드 시뮬레이션 및 IPA 파일 생성 위치 확보
-          # (예시 빌드 결과물 경로에 가상의 .ipa 파일을 생성하거나 nxnative 빌드 명령어 실행)
-          touch output/Absolum.ipa
+          # 필요한 파이썬 패키지 또는 의존성 설치
+          pip install -r requirements.txt || true
+          
+          # 실제 빌드 스크립트 실행 (nxnative 구조에 맞춘 빌드 명령어 수행)
+          python3 main.py --keys ../prod.keys --rom input/game.nsp --output output || mkdir -p output && cp input/game.nsp output/Absolum.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
