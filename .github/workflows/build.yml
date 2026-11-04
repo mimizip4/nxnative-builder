@@ -5,50 +5,49 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download ROM and Keys from Google Drive
+      - name: Install System Dependencies
         run: |
-          echo "Installing gdown..."
+          brew install xcodegen zstd glslang
+          brew install --cask dotnet-sdk
+          sudo xcodebuild -downloadComponent MetalToolchain || true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python Packages
+        run: |
+          python3 -m pip install lz4 "capstone>=5,<6" fonttools nsz zbic "backports.zstd; python_version < '3.14'"
           pip install git+https://github.com/wkentaro/gdown.git
+
+      - name: Clone Official nxnative Repository
+        run: |
+          git clone https://github.com/seedds/nxnative.git
+
+      - name: Download ROM and Keys
+        run: |
+          mkdir -p game_folder
           
           echo "Downloading prod.keys..."
           gdown "https://drive.google.com/uc?id=1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -O prod.keys
           
           echo "Downloading game.nsp (Absolum)..."
-          gdown "https://drive.google.com/uc?id=1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -O game.nsp
+          gdown "https://drive.google.com/uc?id=1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -O game_folder/game.nsp
 
-      - name: Download Pre-built nxnative App
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Build IPA using nxnative script
         run: |
-          echo "Fetching the latest release IPA using GitHub CLI..."
-          # 버전 이름에 상관없이 최신 릴리즈에 첨부된 .ipa 파일을 자동으로 찾아 다운로드합니다.
-          gh release download -R nxnative/nxnative --pattern "*.ipa"
-          
-          # 다운받은 파일의 이름을 일괄적으로 base.ipa로 변경합니다.
-          mv *.ipa base.ipa
-
-      - name: Inject ROM and Package IPA
-        run: |
-          # 1. 껍데기 압축 해제
-          unzip -q base.ipa -d ipa_workspace
-          
-          # 2. 내부 앱 폴더(*.app)를 자동 추적하여 롬과 키 파일 주입
-          cp game.nsp ipa_workspace/Payload/*.app/Absolum.nsp
-          cp prod.keys ipa_workspace/Payload/*.app/
-          
-          # 3. 롬이 포함된 폴더를 다시 .ipa로 압축
-          cd ipa_workspace
-          zip -qr9 ../Absolum-Final.ipa Payload/
+          cd nxnative
+          # 공식 파이썬 스크립트를 통해 롬 파일을 네이티브 iOS 앱으로 재컴파일
+          python3 scripts/build_ipa_from_nsp.py ../game_folder -k ../prod.keys
 
       - name: Upload Complete IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Absolum-IPA
-          path: Absolum-Final.ipa
+          # 빌드가 성공하면 원본 게임 폴더 내부에 .ipa 파일이 생성됨
+          path: game_folder/*.ipa
           compression-level: 0
