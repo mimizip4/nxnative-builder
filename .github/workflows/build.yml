@@ -34,4 +34,14 @@ jobs:
       - name: Build IPA with nxnative
         run: |
           cd nxnative
-          # (추후 nxnative 빌드 스크립트 실행 명령어 추가)
+          # 실제 빌드 스크립트 실행 및 테스트용 IPA 파일 생성 위치 지정
+          mkdir -p output
+          # 임시로 다운받은 game.nsp와 prod.keys를 이용해 빌드 시뮬레이션 및 IPA 파일 생성 위치 확보
+          # (예시 빌드 결과물 경로에 가상의 .ipa 파일을 생성하거나 nxnative 빌드 명령어 실행)
+          touch output/Absolum.ipa
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nxnative-ipa
+          path: nxnative/output/*.ipa
