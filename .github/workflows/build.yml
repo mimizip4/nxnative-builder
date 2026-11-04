@@ -11,16 +11,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download ROM and Keys from Google Drive
+     - name: Download ROM and Keys from Google Drive
         run: |
           echo "Downloading files from Google Drive..."
           pip install gdown
           
-          # prod.keys 다운로드
-          gdown --id "1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -O prod.keys
+          # prod.keys 다운로드 (fuzzy 옵션 추가)
+          gdown --fuzzy --id "1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -O prod.keys
           
-          # Absolum ROM (.nsp) 다운로드
-          gdown --id "1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -O game.nsp
+          # Absolum ROM (.nsp) 다운로드 (fuzzy 옵션 추가)
+          gdown --fuzzy --id "1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -O game.nsp
 
           ls -la
 
