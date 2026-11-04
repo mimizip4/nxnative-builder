@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -25,35 +25,29 @@ jobs:
           # 다운로드된 파일의 실제 용량 확인
           ls -lh prod.keys game.nsp
 
-      - name: Clone and Setup nxnative
+      - name: Download Pre-built nxnative App
         run: |
-          git clone https://github.com/nxnative/nxnative.git
-
-      - name: Build nxnative App
-        run: |
-          cd nxnative
-          # Mac 환경에서 Xcode를 사용하여 nxnative 앱 껍데기 컴파일
-          xcodebuild -project nxnative.xcodeproj -scheme nxnative -configuration Release -arch arm64 CONFIGURATION_BUILD_DIR=../build
+          echo "Downloading official nxnative base IPA..."
+          # 공식 컴파일이 완료된 껍데기(base.ipa) 다운로드
+          wget -O base.ipa "https://github.com/nxnative/nxnative/releases/latest/download/nxnative.ipa"
 
       - name: Inject ROM and Package IPA
         run: |
-          # IPA 패키징의 필수 규격인 Payload 폴더 생성
-          mkdir -p Payload
+          # 1. 껍데기 압축 해제 (내부 규격인 Payload 폴더가 나옴)
+          unzip -q base.ipa -d ipa_workspace
           
-          # 방금 빌드된 앱 껍데기를 Payload 폴더로 이동
-          cp -r build/nxnative.app Payload/
+          # 2. 구글 드라이브에서 받은 롬과 키를 껍데기 안으로 밀어넣기
+          cp game.nsp ipa_workspace/Payload/nxnative.app/Absolum.nsp
+          cp prod.keys ipa_workspace/Payload/nxnative.app/
           
-          # 다운로드한 게임 롬과 키 파일을 앱 껍데기 내부로 밀어넣기
-          cp game.nsp Payload/nxnative.app/Absolum.nsp
-          cp prod.keys Payload/nxnative.app/
-          
-          # 롬이 포함된 최종 Payload 폴더를 .ipa 파일로 압축
-          zip -qr9 Absolum-Final.ipa Payload/
+          # 3. 롬이 포함된 Payload 폴더를 진짜 .ipa로 최종 압축
+          cd ipa_workspace
+          zip -qr9 ../Absolum-Final.ipa Payload/
 
       - name: Upload Complete IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Absolum-IPA
           path: Absolum-Final.ipa
-          # 1.8GB 용량의 이중 압축(zip 안의 zip) 방지를 위해 압축률 0 설정
+          # 1.8GB 용량의 이중 압축 방지를 위해 압축률 0 설정
           compression-level: 0
