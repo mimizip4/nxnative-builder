@@ -13,16 +13,19 @@ jobs:
 
       - name: Download ROM and Keys from Google Drive
         run: |
-          echo "Installing gdown for large file download..."
-          pip install gdown
+          echo "Downloading files from Google Drive with confirmation bypass..."
           
-          echo "Downloading prod.keys..."
-          gdown --fuzzy --id "1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -O prod.keys
+          # prod.keys 다운로드
+          KEY_URL="https://drive.google.com/uc?export=download&id=1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up"
+          KEY_CONFIRM=$(wget --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate -qO- "${KEY_URL}" | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')
+          wget --load-cookies /tmp/cookies.txt --no-check-certificate -O prod.keys "${KEY_URL}&confirm=${KEY_CONFIRM}"
           
-          echo "Downloading game.nsp (Absolum)..."
-          gdown --fuzzy --id "1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -O game.nsp
+          # game.nsp 대용량 파일 다운로드
+          ROM_URL="https://drive.google.com/uc?export=download&id=1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE"
+          ROM_CONFIRM=$(wget --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate -qO- "${ROM_URL}" | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')
+          wget --load-cookies /tmp/cookies.txt --no-check-certificate -O game.nsp "${ROM_URL}&confirm=${ROM_CONFIRM}"
 
-          # 다운로드된 파일 크기 확인용 출력
+          # 파일 크기 확인 (정상적으로 수 GB가 찍혀야 합니다)
           ls -lh prod.keys game.nsp
 
       - name: Clone and Setup nxnative
@@ -32,8 +35,7 @@ jobs:
       - name: Build IPA with nxnative
         run: |
           mkdir -p nxnative/output
-          # 롬 파일과 키를 결과물 폴더에 포함시켜 아티팩트로 업로드
-          mv game.nsp nxnative/output/game.nsp
+          mv game.nsp nxnative/output/Absolum.nsp
           mv prod.keys nxnative/output/prod.keys
 
       - name: Upload IPA Artifact
