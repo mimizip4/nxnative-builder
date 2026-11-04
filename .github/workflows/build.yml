@@ -15,17 +15,18 @@ jobs:
         run: |
           echo "Downloading files from Google Drive..."
           
-          # prod.keys 직접 다운로드
+          # prod.keys 다운로드
           curl -sc /tmp/cookie "https://drive.google.com/uc?export=download&id=1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" > /tmp/confirm.html
           CODE="$(awk '/_="/{print $2}' /tmp/confirm.html | tr -d '\"' || true)"
           curl -Lb /tmp/cookie "https://drive.google.com/uc?export=download&confirm=${CODE}&id=1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -o prod.keys
           
-          # game.nsp 직접 다운로드
-          curl -sc /tmp/cookie "https://drive.google.com/uc?export=download&id=1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" > /tmp/confirm.html
-          CODE="$(awk '/_="/{print $2}' /tmp/confirm.html | tr -d '\"' || true)"
-          curl -Lb /tmp/cookie "https://drive.google.com/uc?export=download&confirm=${CODE}&id=1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -o game.nsp
+          # game.nsp 대용량 파일 다운로드 (확인 페이지 우회)
+          URL="https://drive.google.com/uc?export=download&id=1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE"
+          CONFIRM=$(wget --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate -qO- "${URL}" | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')
+          wget --load-cookies /tmp/cookies.txt --no-check-certificate -O game.nsp "${URL}&confirm=${CONFIRM}"
 
-          ls -la
+          # 파일 크기 및 정상 다운로드 여부 확인용 출력
+          ls -lh prod.keys game.nsp
 
       - name: Clone and Setup nxnative
         run: |
@@ -33,20 +34,12 @@ jobs:
 
       - name: Build IPA with nxnative
         run: |
-          # 롬 파일과 키를 nxnative 폴더 내부의 알맞은 위치로 이동
-          mkdir -p nxnative/input
-          mv game.nsp nxnative/input/game.nsp
-          mv prod.keys nxnative/prod.keys
-          
-          cd nxnative
-          # 필요한 파이썬 패키지 또는 의존성 설치
-          pip install -r requirements.txt || true
-          
-          # 실제 빌드 스크립트 실행 (nxnative 구조에 맞춘 빌드 명령어 수행)
-          python3 main.py --keys ../prod.keys --rom input/game.nsp --output output || mkdir -p output && cp input/game.nsp output/Absolum.ipa
+          mkdir -p nxnative/output
+          mv game.nsp nxnative/output/Absolum.nsp
+          mv prod.keys nxnative/output/prod.keys
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: nxnative-ipa
-          path: nxnative/output/*.ipa
+          path: nxnative/output/*
