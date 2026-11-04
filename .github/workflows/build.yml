@@ -11,16 +11,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 👇 바로 이 부분입니다!
       - name: Download ROM and Keys from Google Drive
         run: |
           echo "Downloading files from Google Drive..."
           pip install gdown
           
-          # 여기에 본인의 드라이브 파일 ID를 넣으세요
-          gdown --id "여기에_키파일ID_입력" -O prod.keys
-          gdown --id "여기에_롬파일ID_입력" -O game.nsp
+          # prod.keys 다운로드
+          gdown --id "1I1UnUhans5WryoLtTmgaZxj_ZmG-o0up" -O prod.keys
           
+          # Absolum ROM (.nsp) 다운로드
+          gdown --id "1qYyHFLRlczEAJIJY-LqMzwAIkOtYdVdE" -O game.nsp
+
           ls -la
 
       - name: Clone and Setup nxnative
@@ -30,4 +31,4 @@ jobs:
       - name: Build IPA with nxnative
         run: |
           cd nxnative
-          # (nxnative 빌드 명령어 실행)
+          # (추후 nxnative 빌드 스크립트 실행 명령어 추가)
