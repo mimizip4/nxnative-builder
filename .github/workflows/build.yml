@@ -206,17 +206,21 @@ jobs:
             echo "No profile override; using automatic detection."
           fi
 
-      - name: Update shader toolchain lock and header
+      - name: Update shader toolchain header
         shell: bash
         run: |
           set -euo pipefail
-          # 가이드 범용본의 단계. 러너의 Metal 컴파일러에 맞게 락을 갱신한다.
+          # 2026-11-05 첫 실행 실패 원인 수정: 현재 seedds main의 dmsh_chain.py는
+          # 인자 없음 / --header / --inputs만 받는다. 가이드 원본의 --update-lock은
+          # 이 스크립트의 유효한 옵션이 아니어서 "usage: see the file header"로
+          # 즉시 실패한다. lock 검증·재작성은 tool_lock.py의 역할이다.
+          # 따라서 --update-lock을 빼고 --header만 실행한다.
           CHAIN_SCRIPT="$(find . -name dmsh_chain.py -type f -print -quit)"
           if [[ -z "$CHAIN_SCRIPT" ]]; then
             echo "::error::Could not find dmsh_chain.py"
             exit 1
           fi
-          python "$CHAIN_SCRIPT" --update-lock
+          echo "Found: $CHAIN_SCRIPT"
           python "$CHAIN_SCRIPT" --header
 
       - name: Build unsigned IPA
